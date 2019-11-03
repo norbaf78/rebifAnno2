@@ -9,6 +9,7 @@
 #include <opencv2/opencv.hpp>
 #include <QFile>
 #include <QDate>
+#include <time.h>
 
 using namespace std;
 using namespace cv;
@@ -71,48 +72,6 @@ Mat addSmallImageToBigMat(Mat bigMatImage, Mat smallMatToAdd, Vec3b th, int star
     return newMatEnsamble;
 }
 
-Mat addColorMatToBwMatWithMask(Mat colorMat, Mat bwMat, Mat maskMat, Vec3b th){
-    int rowsColorMat = colorMat.rows;
-    int colsColorMat = colorMat.cols;
-    int rowsBwMat = bwMat.rows;
-    int colsBwMat = bwMat.cols;
-    int rowsMaskMat = maskMat.rows;
-    int colsMaskMat = maskMat.cols;
-
-    Mat newMatEnsamble = bwMat.clone();
-    if((rowsColorMat == rowsBwMat) && (rowsColorMat == rowsMaskMat) && (colsColorMat == colsBwMat) && (colsColorMat == colsMaskMat)){
-        for(int index_y = 0;index_y < rowsMaskMat; index_y++){
-            for(int index_x = 0;index_x < colsMaskMat; index_x++){
-                Vec3b valMask = maskMat.at<Vec3b>(Point(index_x,index_y));
-                if((valMask[0] != valMask[1] && valMask[1] != valMask[2]) && valMask[2] > 200){
-                    Vec3b valColorMat = colorMat.at<Vec3b>(Point(index_x,index_y));
-                    valColorMat[2] = (valColorMat[2] + 250)/2;
-                    valColorMat[1] = (valColorMat[1] + valColorMat[1])/2;
-                    valColorMat[0] = (valColorMat[0] + valColorMat[0])/2;
-                    newMatEnsamble.at<Vec3b>(Point(index_x,index_y)) = valColorMat;
-                /*
-                    val_0 = newMatEnsamble.at<Vec3b>(Point(index_x-1,index_y-1))
-                    val_1 = newMatEnsamble.at<Vec3b>(Point(index_x,index_y-1))
-                    val_2 = newMatEnsamble.at<Vec3b>(Point(index_x+1,index_y-1))
-                    val_3 = newMatEnsamble.at<Vec3b>(Point(index_x-1,index_y))
-                    val_4 = newMatEnsamble.at<Vec3b>(Point(index_x,index_y))
-                    val_5 = newMatEnsamble.at<Vec3b>(Point(index_x+1,index_y))
-                    val_6 = newMatEnsamble.at<Vec3b>(Point(index_x-1,index_y+1))
-                    val_7 = newMatEnsamble.at<Vec3b>(Point(index_x,index_y+1))
-                    val_8 = newMatEnsamble.at<Vec3b>(Point(index_x+1,index_y+1))
-                    newMatEnsamble.at<Vec3b>(Point(index_x,index_y)) = (val_0 + val_1 + val_2 + val_3 + val_4 + val_5 + val_6 + val_7 + val8)/9
-                */
-                }
-            }
-        }
-        cout << "------- addColorMatToBwMatWithMask ------- end" << endl;
-        return newMatEnsamble;
-    }
-    else{
-        cout << "----c--- addTwoMat3Channel ------- end" << endl;
-        return Mat(0,0,0);
-    }
-}
 
 
 
@@ -123,65 +82,146 @@ Mat addColorMatToBwMatWithMask(Mat colorMat, Mat bwMat, Mat maskMat, Vec3b th){
 
 int main(int argc, char *argv[])
 {
-
-    QCoreApplication a(argc, argv);
-
-
-    QString imagePath = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\brain-damage_16.png";
-    QString imagePathToSave = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\brain-damage_16_test.png";
-    Mat image = imread(imagePath.toStdString(),CV_LOAD_IMAGE_COLOR);
-    for(int index_y = 0;index_y < image.rows; index_y++){
-        for(int index_x = 0;index_x < image.cols; index_x++){
-            Vec3b valColorMat = image.at<Vec3b>(Point(index_x,index_y));
-            if (valColorMat[0] == 255 && valColorMat[1] == 255 && valColorMat[2] == 255)
-                image.at<Vec3b>(Point(index_x,index_y)) = Vec3b(0,0,0);
-            if (valColorMat[0] == valColorMat[1] && valColorMat[1] == valColorMat[2])
-                image.at<Vec3b>(Point(index_x,index_y)) = Vec3b(0,0,0);
-            else
-                image.at<Vec3b>(Point(index_x,index_y)) = Vec3b(255,255,255);
-        }
-    }
-    imwrite(imagePathToSave.toStdString(), image);
-
-
-
-    cout << "finish !!!" << endl;
-    waitKey(10);
-    return a.exec();
-}
-
-
-/*
-
-#define ALTERNATIVE
-    // DIM IMG 12124 in x - 14659 in y
     QCoreApplication a(argc, argv);
     ///////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////// Settings parameters ///////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////
     const int images_in_x = 23;
     const int images_in_y = 16;
-    const int imageDimension_y = 915; // dimension images in "C:\Users\Fabio Roncato\Documents\images_rebif\new_rebif" imageDimension x imageDimension
+    const int imageDimension_y = 915; // dimension images in of the place in the body where injection has been made
     const int imageDimension_x = 526;
     const int border_pixel = 2; //imageDimension_x/2;
-    const int additional_border = 526;
-    QDate startingDay(2010, 5, 17);
-    QDate endingDay(2011, 5, 18);
+    const int additional_border = 526*2/3;
+    QDate startingDay(2011, 5, 17);
+    QDate endingDay(2012, 5, 18);
     int whereXBibImage = 1080;
-    int whereYBibImage = 8720;
-    QFile file("C:\\Users\\Fabio Roncato\\Documents\\Qt\\24_02_2019_rebif\\date_primo_anno.txt");
+    int whereYBibImage = 3720;
+    QFile file("C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\date_secondo_anno.txt");
     QString pathImageFrontInjection = "C:\\Users\\Fabio Roncato\\Documents\\images_rebif\\injectionSite_front_";
     QString pathImageBackInjection = "C:\\Users\\Fabio Roncato\\Documents\\images_rebif\\injectionSite_back_";
     QString imageNoInjection = "C:\\Users\\Fabio Roncato\\Documents\\images_rebif\\injectionSite_0.png";
-    QString savePathBigInjectionImage = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\24_02_2019_rebif\\rebif_color_done.jpg";
-    QString imageSentence = "C:\\Users\\Fabio Roncato\\Documents\\rebif\\ScrittaDaPreparare_7_bis.png";
-    QString imageSentencePlusBigImageDone = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\24_02_2019_rebif\\out.jpg";
-    QString imagePhotoToAdd = "C:\\Users\\Fabio Roncato\\Documents\\rebif\\IMG-4632_tris_bw.jpg"; //12124 in x - 14659 in y
-    QString maskImagePhotoToAdd = "C:\\Users\\Fabio Roncato\\Documents\\rebif\\IMG-4632_tris_mask.jpg";
-    QString colorImagePhotoToAdd = "C:\\Users\\Fabio Roncato\\Documents\\rebif\\IMG-4632_tris_color.jpg";
-    QString imageFinal = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\24_02_2019_rebif\\out2.jpg";
-    QString imageFinalWithBorder = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\24_02_2019_rebif\\out3.jpg";
+    QString savePathBigInjectionImage = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\rebif_color_done.jpg";
+    QString imageBrain = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\brainWithDots2_ok128_tris.png";
+    QString imageBrainPlusBigImageDone = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\out_brain.jpg";
+    QString imagePhotoToAdd = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\big_risonance.jpg"; //12124 in x - 14659 in y
+    QString imageFinal = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\out2_brain.jpg";
+    QString imageFinalWithBorder = "C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\out3_brain.jpg";
 
+    QString pathBackgroundImages_1 = "C:\\Users\\Fabio Roncato\\Documents\\Risonanze\\IMG_anno2\\20110503";
+    int numberImages_1 = 163;
+    QString pathBackgroundImages_2 = "C:\\Users\\Fabio Roncato\\Documents\\Risonanze\\IMG_anno2\\20120619";
+    int numberImages_2 = 187;
+    float zoomToApplay = 4;
+    QString savePathBigRisonanceImage ="C:\\Users\\Fabio Roncato\\Documents\\Qt\\12_09_2019_rebif\\big_risonance.jpg";
+    int number_of_iteration = 3000;
+
+
+    ///////////////////////////////////////////////////////////////////////////////////
+    //
+    //
+    ///////////////////////////////////////////////////////////////////////////////////
+    Mat bigImageRisonance(2*border_pixel+(images_in_y*imageDimension_y)+(images_in_y-1)*1, 2*border_pixel+(images_in_x*imageDimension_x)+(images_in_x-1)*1, CV_8UC3, Scalar(9,9,9));
+    int bigImageRisonanceX = bigImageRisonance.cols;
+    int bigImageRisonanceY = bigImageRisonance.rows;
+    srand (time(NULL));
+
+    for(int i=0;i<number_of_iteration;i++){
+        int imageNumber_1 = (rand() % numberImages_1) +1;
+        QString current_image_path_1 = pathBackgroundImages_1 + "\\" + QString::number(imageNumber_1) + ".jpeg";
+        cout << current_image_path_1.toStdString() << endl;
+        int imageNumber_2 = (rand() % numberImages_2) +1;
+        QString current_image_path_2 = pathBackgroundImages_2 + "\\" + QString::number(imageNumber_2) + ".jpeg";
+        cout << current_image_path_2.toStdString() << endl;
+        //image will be selected based on the position
+        Mat currentImageRisonance_1 = imread(current_image_path_1.toStdString(),CV_LOAD_IMAGE_COLOR);
+        Mat currentImageRisonance_2 = imread(current_image_path_2.toStdString(),CV_LOAD_IMAGE_COLOR);
+        Mat currentImageRisonance;
+        bool from_1;
+        if(currentImageRisonance_1.data && currentImageRisonance_2.data){ // both the images selected are available
+            int whereToWriteImageRisonanceX = (rand() % (bigImageRisonanceX-(currentImageRisonance_1.cols * int(zoomToApplay))));
+            int whereToWriteImageRisonanceY = (rand() % (bigImageRisonanceY-int((currentImageRisonance_1.rows * int(zoomToApplay)))));
+            cout << whereToWriteImageRisonanceX << ":" << whereToWriteImageRisonanceY << endl;
+            if(whereToWriteImageRisonanceY < (bigImageRisonance.rows/2 - currentImageRisonance_1.rows/2)-bigImageRisonance.rows/8){
+                currentImageRisonance = currentImageRisonance_1;
+                from_1=true;
+            }
+            else if(whereToWriteImageRisonanceY > (bigImageRisonance.rows/2 - currentImageRisonance_1.rows/2)+bigImageRisonance.rows/8){
+                currentImageRisonance = currentImageRisonance_2;
+                from_1=false;
+            }
+            else{
+                srand(time(0));
+                int randomval = rand() % 2;
+                if(randomval==0){
+                    currentImageRisonance = currentImageRisonance_1;
+                    from_1=true;
+                }
+                else{
+                    currentImageRisonance = currentImageRisonance_2;
+                    from_1=false;
+                }
+            }
+            Mat currentImageRisonanceResized;
+            cv::resize(currentImageRisonance,currentImageRisonanceResized, Size(), zoomToApplay, zoomToApplay,CV_INTER_AREA );
+            // this is optional. Before add the image is possible write sromething
+//            if(from_1)
+//                putText(currentImageRisonanceResized, "**", Point(222,222), FONT_HERSHEY_TRIPLEX , 8.0, CV_RGB(255,255,0), 10.0 );
+//            else
+//                putText(currentImageRisonanceResized, "**", Point(222,222), FONT_HERSHEY_TRIPLEX , 8.0, CV_RGB(0,255,255), 10.0 );
+            // insert the image
+            currentImageRisonanceResized.copyTo(bigImageRisonance(cv::Rect(whereToWriteImageRisonanceX,whereToWriteImageRisonanceY,currentImageRisonanceResized.cols, currentImageRisonanceResized.rows)));
+        }
+    }
+
+/*
+    for(int i=0;i<number_of_iteration;i++){
+        int imageNumber_1 = (rand() % numberImages_1) +1;
+        QString current_image_path = pathBackgroundImages_1 + "\\" + QString::number(imageNumber_1) + ".jpeg";
+        cout << current_image_path.toStdString() << endl;
+        //image has been selected
+        Mat currentImageRisonance = imread(current_image_path.toStdString(),CV_LOAD_IMAGE_COLOR);
+        if(currentImageRisonance.data){
+            Mat currentImageRisonanceResized;
+            cv::resize(currentImageRisonance,currentImageRisonanceResized, Size(), zoomToApplay, zoomToApplay,CV_INTER_AREA );
+
+            int whereToWriteImageRisonanceX = (rand() % (bigImageRisonanceX-currentImageRisonanceResized.cols));
+            int whereToWriteImageRisonanceY = (rand() % (bigImageRisonanceY/2-currentImageRisonanceResized.rows/2));
+            cout << whereToWriteImageRisonanceX << ":" << whereToWriteImageRisonanceY << endl;
+
+            // this is optional. Before add the image is possible write sromething
+            //putText(currentImageBody, dayDate.toStdString(), Point(60,imageDimension_y-110), FONT_HERSHEY_TRIPLEX , 2.0, CV_RGB(0,0,0), 4.0 );
+            // insert the image
+            currentImageRisonanceResized.copyTo(bigImageRisonance(cv::Rect(whereToWriteImageRisonanceX,whereToWriteImageRisonanceY,currentImageRisonanceResized.cols, currentImageRisonanceResized.rows)));
+        }
+    }
+
+    for(int i=0;i<number_of_iteration;i++){
+        int imageNumber_2 = (rand() % numberImages_2) +1;
+        QString current_image_path = pathBackgroundImages_2 + "\\" + QString::number(imageNumber_2) + ".jpeg";
+        cout << current_image_path.toStdString() << endl;
+        //image has been selected
+        Mat currentImageRisonance = imread(current_image_path.toStdString(),CV_LOAD_IMAGE_COLOR);
+        if(currentImageRisonance.data){
+            Mat currentImageRisonanceResized;
+            cv::resize(currentImageRisonance,currentImageRisonanceResized, Size(), zoomToApplay, zoomToApplay,CV_INTER_AREA );
+
+            int whereToWriteImageRisonanceX = (rand() % (bigImageRisonanceX-currentImageRisonanceResized.cols));
+            int whereToWriteImageRisonanceY = bigImageRisonanceY/2-currentImageRisonanceResized.rows/2 + (rand() % (bigImageRisonanceY/2-currentImageRisonanceResized.rows/2));
+            cout << whereToWriteImageRisonanceX << ":" << whereToWriteImageRisonanceY << endl;
+
+            // this is optional. Before add the image is possible write sromething
+            //putText(currentImageBody, dayDate.toStdString(), Point(60,imageDimension_y-110), FONT_HERSHEY_TRIPLEX , 2.0, CV_RGB(0,0,0), 4.0 );
+            // insert the image
+            currentImageRisonanceResized.copyTo(bigImageRisonance(cv::Rect(whereToWriteImageRisonanceX,whereToWriteImageRisonanceY,currentImageRisonanceResized.cols, currentImageRisonanceResized.rows)));
+        }
+    }
+
+*/
+
+    bigImageRisonance = ~bigImageRisonance;
+    imwrite(savePathBigRisonanceImage.toStdString(), bigImageRisonance);
+    cout << "Image: " << savePathBigRisonanceImage.toStdString() << endl;
+    cout << "finish this step!!!" << endl;
 
 
 
@@ -262,36 +302,26 @@ int main(int argc, char *argv[])
         }
     }
     imwrite(savePathBigInjectionImage.toStdString(), bigImageAllInjection);
+    cout << "Image: " << savePathBigInjectionImage.toStdString() << endl;
 
     // add the two image ( big image injection + sentence image) and save it
-    Mat matSentence = imread(imageSentence.toStdString());
-    //Mat outputImage1 = addTwo3ChannelMat(bigImageAllInjection, matSentence, Vec3b(255,255,255));
-    Mat outputImage1 = addSmallImageToBigMat(bigImageAllInjection, matSentence, Vec3b(255,255,255), whereXBibImage, whereYBibImage);
-    imwrite(imageSentencePlusBigImageDone.toStdString() , outputImage1 );
+    Mat matBrain = imread(imageBrain.toStdString());
+    whereXBibImage = bigImageAllInjection.cols/2 - matBrain.cols/2;
+    whereYBibImage = bigImageAllInjection.rows/2 - matBrain.rows/2;
+    Mat outputImage1 = addSmallImageToBigMat(bigImageAllInjection, matBrain, Vec3b(255,255,255), whereXBibImage, whereYBibImage);
+    imwrite(imageBrainPlusBigImageDone.toStdString() , outputImage1 );
 
-#ifdef ALTERNATIVE
-    Mat imagePhoto = imread(imagePhotoToAdd.toStdString(),CV_LOAD_IMAGE_COLOR);
-    Mat colorImagePhoto = imread(colorImagePhotoToAdd.toStdString(),CV_LOAD_IMAGE_COLOR);
-    Mat maskImagePhoto = imread(maskImagePhotoToAdd.toStdString());
-    Mat imagePhotoToAddNew = addColorMatToBwMatWithMask(colorImagePhoto, imagePhoto, maskImagePhoto, Vec3b(0,0,255));
-    Mat outputImage2 = addTwo3ChannelMat(imagePhotoToAddNew, outputImage1, Vec3b(255,255,255));
-    imwrite(imageFinal.toStdString() , outputImage2 );
-#else
-    // add the previous image and the photo image( big image injection + sentence image  + photo image) and save it
     Mat imagePhoto = imread(imagePhotoToAdd.toStdString(),CV_LOAD_IMAGE_COLOR);
     Mat outputImage2 = addTwo3ChannelMat(imagePhoto, outputImage1, Vec3b(255,255,255));
     imwrite(imageFinal.toStdString() , outputImage2 );
-#endif
 
     // add white border left-right, up-down
     outputImage2.copyTo(bigImageAllInjectionWithAdditionalBorder(cv::Rect(additional_border,additional_border,outputImage2.cols, outputImage2.rows)));
     imwrite(imageFinalWithBorder.toStdString() , bigImageAllInjectionWithAdditionalBorder );
 
-
     cout << "finish !!!" << endl;
     waitKey(10);
     return a.exec();
 }
-*/
 
 
